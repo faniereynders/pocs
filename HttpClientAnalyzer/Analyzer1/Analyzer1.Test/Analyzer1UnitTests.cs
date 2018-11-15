@@ -1,4 +1,4 @@
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -19,6 +19,32 @@ namespace Analyzer1.Test
             var test = @"";
 
             VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void TestMethod3()
+        {
+            var test = @"using System.Net.Http;
+
+namespace Analyzer1
+{
+    class Program
+    {
+        private HttpClient randomClient = new HttpClient();
+    }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = "EnforceSingletonHttpClientInstance",
+                Message = "☹ To avoid socket exhaustion, DO NOT use = new HttpClient()",
+                Severity = DiagnosticSeverity.Error,
+                Locations =
+                    new[] {
+                        new DiagnosticResultLocation("Test0.cs", 7, 41)
+                    }
+            };
+
+            VerifyCSharpDiagnostic(test, expected);
         }
 
         //Diagnostic and CodeFix both triggered and checked for
