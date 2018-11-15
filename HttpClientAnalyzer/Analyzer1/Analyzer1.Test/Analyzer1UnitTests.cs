@@ -22,7 +22,7 @@ namespace Analyzer1.Test
         }
 
         [TestMethod]
-        public void TestMethod3()
+        public void TestFieldInitialization()
         {
             var test = @"using System.Net.Http;
 
@@ -47,52 +47,67 @@ namespace Analyzer1
             VerifyCSharpDiagnostic(test, expected);
         }
 
-        //Diagnostic and CodeFix both triggered and checked for
         [TestMethod]
-        public void TestMethod2()
+        public void TestVariableDeclaration()
         {
-            var test = @"
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Diagnostics;
+            var test = @"using System.Net.Http;
 
-    namespace ConsoleApplication1
+namespace Analyzer1
+{
+    class Program
     {
-        class TypeName
-        {   
+        void Method()
+        {
+            using (HttpClient client = new HttpClient())
+            {
+            }
         }
-    }";
+    }
+}";
             var expected = new DiagnosticResult
             {
-                Id = "Analyzer1",
-                Message = String.Format("Type name '{0}' contains lowercase letters", "TypeName"),
-                Severity = DiagnosticSeverity.Warning,
+                Id = "BlockHttpClientInstantiation",
+                Message = "☹ To avoid socket exhaustion, DO NOT use = new HttpClient()",
+                Severity = DiagnosticSeverity.Error,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 15)
-                        }
+                        new DiagnosticResultLocation("Test0.cs", 9, 38)
+                    }
             };
 
             VerifyCSharpDiagnostic(test, expected);
-
-            var fixtest = @"
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Diagnostics;
-
-    namespace ConsoleApplication1
-    {
-        class TYPENAME
-        {   
         }
-    }";
-            VerifyCSharpFix(test, fixtest);
+
+        [TestMethod]
+        public void TestInvocation()
+        {
+            var test = @"using System;
+using System.Net.Http;
+
+namespace Analyzer1
+{
+    class Program
+    {
+        void Method()
+        {
+            using (HttpClient client = Activator.CreateInstance<HttpClient>())
+            {
+            }
+        }
+    }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = "BlockHttpClientInstantiation",
+                Message = "☹ To avoid socket exhaustion, DO NOT use Activator.CreateInstance<HttpClient>()",
+                Severity = DiagnosticSeverity.Error,
+                Locations =
+                    new[] {
+                        new DiagnosticResultLocation("Test0.cs", 10, 40)
+                    }
+            };
+
+            VerifyCSharpDiagnostic(test, expected);
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
