@@ -78,6 +78,38 @@ namespace Analyzer1
             VerifyCSharpDiagnostic(test, expected);
         }
 
+        [TestMethod]
+        public void TestMethod5()
+        {
+            var test = @"using System;
+using System.Net.Http;
+
+namespace Analyzer1
+{
+    class Program
+    {
+        void Method()
+        {
+            using (HttpClient client = Activator.CreateInstance<HttpClient>())
+            {
+            }
+        }
+    }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = "BlockHttpClientInstantiation",
+                Message = "☹ To avoid socket exhaustion, DO NOT use Activator.CreateInstance<HttpClient>()",
+                Severity = DiagnosticSeverity.Error,
+                Locations =
+                    new[] {
+                        new DiagnosticResultLocation("Test0.cs", 10, 40)
+                    }
+            };
+
+            VerifyCSharpDiagnostic(test, expected);
+        }
+
         //Diagnostic and CodeFix both triggered and checked for
         [TestMethod]
         public void TestMethod2()
