@@ -128,6 +128,38 @@ namespace Analyzer1
             VerifyCSharpDiagnostic(test, expected);
         }
 
+        [TestMethod]
+        public void TestInherited()
+        {
+            var test = @"using System.Net.Http;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        using (var client = new Foo())
+        {
+        }
+    }
+
+    public class Foo : HttpClient
+    {
+    }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = "BlockInheritedHttpClientInstantiation",
+                Message = "☹ To avoid socket exhaustion, DO NOT use = new Foo()",
+                Severity = DiagnosticSeverity.Error,
+                Locations =
+                    new[] {
+                        new DiagnosticResultLocation("Test0.cs", 7, 27)
+                    }
+            };
+
+            VerifyCSharpDiagnostic(test, expected);
+        }
+
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
             return new HttpClientFactoryCodeFixProvider();
