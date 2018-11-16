@@ -60,23 +60,10 @@ namespace Analyzer1
             try
             {
                 var root = await document.GetSyntaxRootAsync();
-                var semanticModel = await document.GetSemanticModelAsync();
                 var httpClientCreationExpression = root.FindNode(diagnostic.Location.SourceSpan);
 
-                var generator = SyntaxGenerator.GetGenerator(document);
 
-
-
-                //var field = generator.FieldDeclaration("httpClientFactory", ParseTypeName("System.Net.Http.IHttpClientFactory"));
-                //var newRoot = generator.InsertMembers(root, 0, new[] { field });
-
-
-                var operation = semanticModel.GetOperation(httpClientCreationExpression);
-
-
-
-
-                var @class = operation.Syntax.Ancestors().OfType<ClassDeclarationSyntax>().First();
+                var @class = httpClientCreationExpression.Ancestors().OfType<ClassDeclarationSyntax>().First();
 
                 FieldDeclarationSyntax aField = FieldDeclaration(
     VariableDeclaration(
@@ -87,33 +74,13 @@ namespace Analyzer1
 
                 var firstNode = @class.ChildNodes().First();
 
-                
-
-                var newClass = @class.InsertNodesBefore(firstNode, new[] { aField });
-
                 var invocationNode =  ParseExpression("httpClientFactory.CreateClient()");
-
-                var newRoot = root.ReplaceNode(@class, newClass);
 
                 var newRoot2 =
                     httpClientCreationExpression.ReplaceNode(httpClientCreationExpression.ChildNodes().First(),
                         invocationNode);
-                //      var arrayTypeSymbol = (IArrayTypeSymbol) operation.Type;
-                //     var elementType = arrayTypeSymbol.ElementType;
-
-                // genericname expression = Empty<int> (typeExpr, element type)
-                //     var genericName = generator.GenericName("Empty", elementType);
-                // type expression = Array
-                // member access expression = Array.Empty<int>
-                // invocation expression = Array.Empty<int>()
-
-              //  var newDocument = document.WithSyntaxRoot(newRoot2);
-
-
-
 
                 var editor = await DocumentEditor.CreateAsync(document);
-              //  editor.RemoveNode(variableDeclaration);
                 editor.ReplaceNode(httpClientCreationExpression, newRoot2);
                 editor.InsertBefore(firstNode,
                      new[] { aField });

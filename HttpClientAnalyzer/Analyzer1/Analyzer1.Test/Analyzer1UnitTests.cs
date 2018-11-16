@@ -83,7 +83,8 @@ namespace Analyzer1
 {
     class Program
     {
-    	private IHttpClientFactory httpClientFactory;
+        private System.Net.Http.IHttpClientFactory httpClientFactory;
+
         void Method()
         {
             using (HttpClient client = httpClientFactory.CreateClient())
@@ -92,7 +93,7 @@ namespace Analyzer1
         }
     }
 }";
-            VerifyCSharpFix(test, fixedSource);
+            VerifyCSharpFix(test, fixedSource, allowNewCompilerDiagnostics:true);
         }
 
         [TestMethod]
