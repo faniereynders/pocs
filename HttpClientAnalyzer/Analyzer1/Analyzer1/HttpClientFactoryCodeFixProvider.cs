@@ -95,8 +95,9 @@ namespace Analyzer1
 
                 var newRoot = root.ReplaceNode(@class, newClass);
 
-                var     newRoot2 = newRoot.ReplaceNode(httpClientCreationExpression.ChildNodes().First(),invocationNode);
-
+                var newRoot2 =
+                    httpClientCreationExpression.ReplaceNode(httpClientCreationExpression.ChildNodes().First(),
+                        invocationNode);
                 //      var arrayTypeSymbol = (IArrayTypeSymbol) operation.Type;
                 //     var elementType = arrayTypeSymbol.ElementType;
 
@@ -113,7 +114,7 @@ namespace Analyzer1
 
                 var editor = await DocumentEditor.CreateAsync(document);
               //  editor.RemoveNode(variableDeclaration);
-                editor.ReplaceNode(httpClientCreationExpression, invocationNode);
+                editor.ReplaceNode(httpClientCreationExpression, newRoot2);
                 editor.InsertBefore(firstNode,
                      new[] { aField });
 
