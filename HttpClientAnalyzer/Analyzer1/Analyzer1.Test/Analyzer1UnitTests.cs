@@ -76,6 +76,23 @@ namespace Analyzer1
             };
 
             VerifyCSharpDiagnostic(test, expected);
+
+            var fixedSource = @"using System.Net.Http;
+
+namespace Analyzer1
+{
+    class Program
+    {
+    	private IHttpClientFactory httpClientFactory;
+        void Method()
+        {
+            using (HttpClient client = httpClientFactory.CreateClient())
+            {
+            }
+        }
+    }
+}";
+            VerifyCSharpFix(test, fixedSource);
         }
 
         [TestMethod]
