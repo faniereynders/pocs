@@ -48,6 +48,35 @@ namespace Analyzer1
         }
 
         [TestMethod]
+        public void TestInheritedWithFieldInitialization()
+        {
+            var test = @"using System.Net.Http;
+
+namespace Analyzer1
+{
+    class Program
+    {
+        private Foo randomClient = new Foo();
+    }
+    class Foo : HttpClient
+    {
+    }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = "EnforceSingletonHttpClientInstance",
+                Message = "☹ To avoid socket exhaustion, DO NOT use = new Foo()",
+                Severity = DiagnosticSeverity.Error,
+                Locations =
+                    new[] {
+                        new DiagnosticResultLocation("Test0.cs", 7, 34)
+                    }
+            };
+
+            VerifyCSharpDiagnostic(test, expected);
+        }
+
+        [TestMethod]
         public void TestVariableDeclaration()
         {
             var test = @"using System.Net.Http;
