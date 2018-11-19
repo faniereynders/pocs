@@ -46,34 +46,31 @@ namespace Analyzer1
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
             // Find the invocation expression identified by the diagnostic.
-            var invocationExpr =
+            var fieldDeclaration =
               root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf()
-              .OfType<ObjectCreationExpressionSyntax>().First();
+              .OfType<FieldDeclarationSyntax>().First();
 
             // Register a code action that will invoke the fix.
             context.RegisterCodeFix(
               CodeAction.Create(title, c =>
-              FixRegexAsync(context.Document, invocationExpr, c), equivalenceKey: title), diagnostic);
+              FixRegexAsync(context.Document, fieldDeclaration, c), equivalenceKey: title), diagnostic);
         }
 
         private async Task<Document> FixRegexAsync(Document document,
-          ObjectCreationExpressionSyntax syntax,
+          FieldDeclarationSyntax syntax,
           CancellationToken cancellationToken)
         {
             try
             {
-                var originalSyntax = syntax.Parent.Parent.Parent.Parent;
-                var pre = originalSyntax.GetLeadingTrivia().ToString();
-                var newExpression = originalSyntax.ToFullString().Replace("private","private static");
-                var newSyntax = CSharpSyntaxTree.ParseText($"class A {{{newExpression}}}");
-                var aa = newSyntax.GetRoot().DescendantNodes().OfType<FieldDeclarationSyntax>().First();
-                //var aa = newSyntax.
+                var modifiers = syntax.Modifiers;
+                var staticToken = Token(SyntaxKind.StaticKeyword);
+                var newModifiers = modifiers.Add(staticToken);
+
+                var newSyntax = syntax.WithModifiers(newModifiers);
                 var root = await document.GetSyntaxRootAsync();
-               
 
+                var newRoot = root.ReplaceNode(syntax, newSyntax).NormalizeWhitespace();
 
-                var newRoot = root.ReplaceNode(originalSyntax, aa).NormalizeWhitespace();
-               
                 var newDocument = document.WithSyntaxRoot(newRoot);
 
                 return newDocument;
