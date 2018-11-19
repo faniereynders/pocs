@@ -20,7 +20,7 @@ namespace Analyzer1
     public class CodeFix2 : CodeFixProvider
     {
         // TODO: Replace with actual diagnostic id that should trigger this fix.
-        public const string DiagnosticId = "HttpClientInstance";
+        public const string DiagnosticId = "EnforceSingletonHttpClientInstance";
         private const string title = @"¯\_(ツ)_/¯ Convert to static";
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds
