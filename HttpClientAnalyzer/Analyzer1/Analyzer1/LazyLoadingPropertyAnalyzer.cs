@@ -77,9 +77,28 @@ namespace Analyzer1
             return IsLocalReference(propertyReference.Instance);
         }
 
+        private static IPropertyReferenceOperation FindVirtualPropertyReference(IPropertyReferenceOperation operation)
+        {
+            if (operation.Property.IsVirtual)
+            {
+                return operation;
+            }
+            IPropertyReferenceOperation instancePropertyReference = operation.Instance as IPropertyReferenceOperation;
+            if (instancePropertyReference == null)
+            {
+                return null;
+            }
+            return FindVirtualPropertyReference(instancePropertyReference);
+        }
+
         private static void AnalyzePropertyReference(IPropertyReferenceOperation operation, OperationAnalysisContext context, string methodName)
         {
-            if (operation.Property.IsVirtual && IsLocalReference(operation.Instance))
+            operation = FindVirtualPropertyReference(operation);
+            if (operation == null)
+            {
+                return;
+            }
+            if (IsLocalReference(operation.Instance))
             {
                 var diagnostic = Diagnostic.Create(LazyEvaluationInExpressionRule, operation.Syntax.GetLocation(), operation.Property.Name,
                     methodName);
