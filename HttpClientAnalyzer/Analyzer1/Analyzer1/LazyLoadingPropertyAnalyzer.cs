@@ -65,7 +65,7 @@ namespace Analyzer1
 
         private static void AnalyzePropertyReference(IPropertyReferenceOperation operation, OperationAnalysisContext context, string methodName)
         {
-            if (operation.Property.IsVirtual)
+            if (operation.Property.IsVirtual && operation.Instance.Kind == OperationKind.LocalReference)
             {
                 var diagnostic = Diagnostic.Create(LazyEvaluationInExpressionRule, operation.Syntax.GetLocation(), operation.Property.Name,
                     methodName);
