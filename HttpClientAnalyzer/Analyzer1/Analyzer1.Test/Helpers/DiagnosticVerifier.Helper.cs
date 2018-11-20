@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace TestHelper
 {
@@ -20,6 +22,9 @@ namespace TestHelper
         private static readonly MetadataReference SystemNetHttpReference =
             MetadataReference.CreateFromFile(typeof(HttpClient).Assembly.Location);
         private static readonly MetadataReference SystemCoreReference = MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location);
+        private static readonly MetadataReference TasksReference = MetadataReference.CreateFromFile(typeof(Task).Assembly.Location);
+        private static readonly MetadataReference ExpressionsReference = MetadataReference.CreateFromFile(typeof(Expression).Assembly.Location);
+        private static readonly MetadataReference GenericCollectionsReference = MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location);
         private static readonly MetadataReference CSharpSymbolsReference = MetadataReference.CreateFromFile(typeof(CSharpCompilation).Assembly.Location);
         private static readonly MetadataReference CodeAnalysisReference = MetadataReference.CreateFromFile(typeof(Compilation).Assembly.Location);
 
@@ -154,6 +159,9 @@ namespace TestHelper
                 .AddProject(projectId, TestProjectName, TestProjectName, language)
                 .AddMetadataReference(projectId, SystemNetHttpReference)
                 .AddMetadataReference(projectId, CorlibReference)
+                .AddMetadataReference(projectId, TasksReference)
+                .AddMetadataReference(projectId, ExpressionsReference)
+                .AddMetadataReference(projectId, GenericCollectionsReference)
                 .AddMetadataReference(projectId, SystemCoreReference)
                 .AddMetadataReference(projectId, CSharpSymbolsReference)
                 .AddMetadataReference(projectId, CodeAnalysisReference);
