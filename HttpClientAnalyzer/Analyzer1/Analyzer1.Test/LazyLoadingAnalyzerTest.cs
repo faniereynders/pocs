@@ -13,7 +13,7 @@ namespace Analyzer1.Test
     public class LazyLoadingAnalyzerTest : CodeFixVerifier
     {
         [TestMethod]
-        public void TestLazyProperty()
+        public void TestLazyPropertyFromOuterScope()
         {
             var test = @"using System;
 using System.Collections.Generic;
@@ -54,6 +54,35 @@ namespace LazyLoadingPropertyAnalyzer.Test
             };
 
             VerifyCSharpDiagnostic(test, expected);
+        }
+
+        [TestMethod]
+        public void TestLazyProperty()
+        {
+            var test = @"using System;
+using System.Threading.Tasks;
+using System.Linq.Expressions;
+
+namespace ConsoleApp1
+{
+    class WithVirtualInt
+    {
+        public virtual int A { get; set; }
+    }
+    class Program
+    {
+        private static Task<WithVirtualInt> GetSingleAsync(Expression<Func<WithVirtualInt, bool>> whereClause)
+        {
+            return Task.FromResult<WithVirtualInt>(null);
+        }
+        public async Task Method()
+        {
+            WithVirtualInt a = await GetSingleAsync(i => i.A == 5);
+        }
+    }
+}";
+
+            VerifyCSharpDiagnostic(test);
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
