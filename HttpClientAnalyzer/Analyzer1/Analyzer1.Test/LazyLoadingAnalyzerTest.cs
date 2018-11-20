@@ -128,6 +128,49 @@ namespace ConsoleApp1
             VerifyCSharpDiagnostic(test, expected);
         }
 
+        [TestMethod]
+        public void TestNotEndOfChain()
+        {
+            var test = @"using System;
+using System.Threading.Tasks;
+using System.Linq.Expressions;
+
+namespace ConsoleApp1
+{
+    class WithVirtual
+    {
+        public virtual WithOther A { get; set; }
+    }
+    class WithOther
+    {
+        public int B { get; set; }
+    }
+    class Program
+    {
+        private static Task<int> GetSingleAsync(Expression<Func<int, bool>> whereClause)
+        {
+            return Task.FromResult(0);
+        }
+        public async Task Method()
+        {
+            WithVirtual b = new WithVirtual { };
+            int a = await GetSingleAsync(i => 5 == b.A.B);
+        }
+    }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = "LazyEvaluationInExpression",
+                Message = "Property \"A\" might be loaded asynchronously when accessed during asynchronous evaluation in method \"GetSingleAsync\".",
+                Severity = DiagnosticSeverity.Warning,
+                Locations =
+                    new[] {
+                        new DiagnosticResultLocation("Test0.cs", 24, 52)
+                    }
+            };
+            VerifyCSharpDiagnostic(test, expected);
+        }
+
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new LazyLoadingPropertyAnalyzer();
