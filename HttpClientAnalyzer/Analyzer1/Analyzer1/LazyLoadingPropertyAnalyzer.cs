@@ -9,12 +9,12 @@ namespace Analyzer1
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class LazyLoadingPropertyAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "LazyLoadingPropertyAnalyzer";
+        public const string DiagnosticId = "LazyEvaluationInExpression";
         // You can change these strings in the Resources.resx file. If you do not want your analyzer to be localize-able, you can use regular strings for Title and MessageFormat.
         // See https://github.com/dotnet/roslyn/blob/master/docs/analyzers/Localizing%20Analyzers.md for more on localization
         private const string Category = "Best practices";
 
-        private static DiagnosticDescriptor LazyEvaluationInExpressionRule = new DiagnosticDescriptor("LazyEvaluationInExpression", "Be careful about accessing virtual properties here", "Property \"{0}\" might be loaded asynchronously when accessed during asynchronous evaluation in method \"{1}\".", Category, DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "use of lazy-loaded property inside expression that is passed to asynchronous method");
+        private static DiagnosticDescriptor LazyEvaluationInExpressionRule = new DiagnosticDescriptor(DiagnosticId, "Be careful about accessing virtual properties here", "Property \"{0}\" might be loaded asynchronously when accessed during asynchronous evaluation in method \"{1}\".", Category, DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "use of lazy-loaded property inside expression that is passed to asynchronous method");
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(LazyEvaluationInExpressionRule); } }
 
