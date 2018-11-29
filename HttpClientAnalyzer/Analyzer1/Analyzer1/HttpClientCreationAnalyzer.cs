@@ -18,8 +18,10 @@ namespace Analyzer1
         private const string HttpClient = "System.Net.Http.HttpClient";
         public const string EnforceSingletonHttpClientInstanceRule = "EnforceSingletonHttpClientInstance";
         public const string BlockHttpClientInstantiationRule = "BlockHttpClientInstantiation";
+        public const string BlockInheritedHttpClientInstantiationRule = "BlockInheritedHttpClientInstantiation";
         private static DiagnosticDescriptor EnforceSingletonHttpClientInstanceDiagnostic = new DiagnosticDescriptor(EnforceSingletonHttpClientInstanceRule, "Non-static HttpClient instances are not allowed", "☹ To avoid socket exhaustion, DO NOT use {0}", Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: "Naughty HttpClient creation");
         private static DiagnosticDescriptor BlockHttpClientInstantiationDiagnostic = new DiagnosticDescriptor(BlockHttpClientInstantiationRule, "Instantiation of HttpClient instances are not allowed", "☹ To avoid socket exhaustion, DO NOT use {0}", Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: "Naughty HttpClient creation");
+        private static DiagnosticDescriptor BlockInheritedHttpClientInstantiationDiagnostic = new DiagnosticDescriptor(BlockInheritedHttpClientInstantiationRule, "Instantiation of HttpClient instances are not allowed", "☹ To avoid socket exhaustion, DO NOT use {0}", Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: "Naughty HttpClient creation");
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
@@ -27,7 +29,8 @@ namespace Analyzer1
             {
                 return ImmutableArray.Create(
                     EnforceSingletonHttpClientInstanceDiagnostic,
-                    BlockHttpClientInstantiationDiagnostic
+                    BlockHttpClientInstantiationDiagnostic,
+                    BlockInheritedHttpClientInstantiationDiagnostic
                     );
             }
         }
@@ -38,6 +41,7 @@ namespace Analyzer1
             context.RegisterOperationAction(this.AnalyzeObjectCreationOperation, OperationKind.ObjectCreation, OperationKind.Invocation);
       //      context.RegisterOperationAction(this.AnalyzeVariableDeclarationOperation, OperationKind.ObjectCreation);
         }
+        
 
         private void AnalyzeObjectCreationOperation(OperationAnalysisContext context)
         {
@@ -57,33 +61,67 @@ namespace Analyzer1
        
         }
 
-        private static void AnalyzeVariableDeclarationOperation(OperationAnalysisContext context)
+        private IVariableInitializerOperation FindVariableInitializer(IOperation operation)
         {
-            var operation = (IVariableInitializerOperation) context.Operation.Parent;
+            IVariableInitializerOperation result = operation as IVariableInitializerOperation;
+            if (result != null)
+            {
+                return result;
+            }
+            return FindVariableInitializer(operation.Parent);
+        }
+
+        private void AnalyzeVariableDeclarationOperation(OperationAnalysisContext context)
+        {
+            var operation = FindVariableInitializer(context.Operation);
             
-            if (operation.Value.Type.ToString().Equals(HttpClient))
+            CheckInstantiation(context.Operation.Type, operation, context);
+        }
+
+        private static bool IsHttpClientItself(ITypeSymbol type)
+        {
+            return type.ToString().Equals(HttpClient);
+        }
+
+        private void CheckInstantiation(ITypeSymbol type, IOperation operation, OperationAnalysisContext context)
+        {
+            if (IsHttpClientItself(type))
             {
                 var diagnostic = Diagnostic.Create(BlockHttpClientInstantiationDiagnostic, operation.Syntax.GetLocation(), operation.Syntax.GetText());
                 context.ReportDiagnostic(diagnostic);
             }
-           
+            else if (IsInheritedHttpClient(type))
+            {
+                var diagnostic = Diagnostic.Create(BlockInheritedHttpClientInstantiationDiagnostic, operation.Syntax.GetLocation(), operation.Syntax.GetText());
+                context.ReportDiagnostic(diagnostic);
+            }
         }
-        private static void AnalyzeInvocationOperation(OperationAnalysisContext context)
+
+        private bool IsInheritedHttpClient(ITypeSymbol type)
+        {
+            ITypeSymbol originalDefinition = type.OriginalDefinition;
+            if (originalDefinition.BaseType == null)
+            {
+                return false;
+            }
+            return IsHttpClientItself(originalDefinition.BaseType) ||
+                   IsInheritedHttpClient(originalDefinition.BaseType);
+        }
+
+        private void AnalyzeInvocationOperation(OperationAnalysisContext context)
         {
             var operation = (IInvocationOperation) context.Operation;
-            if (operation.TargetMethod.ContainingType.ToString().Equals("System.Activator") && operation.TargetMethod.Name.Equals("CreateInstance") && operation.TargetMethod.ReturnType.ToString().Equals(HttpClient))
+            if (!operation.TargetMethod.ContainingType.ToString().Equals("System.Activator") || !operation.TargetMethod.Name.Equals("CreateInstance"))
             {
-                var diagnostic = Diagnostic.Create(BlockHttpClientInstantiationDiagnostic, operation.Syntax.GetLocation(), operation.Syntax.GetText());
-                context.ReportDiagnostic(diagnostic);
+                return;
             }
-          
-
+            CheckInstantiation(operation.TargetMethod.ReturnType, operation, context);
         }
-        private static void AnalyzeFieldInitializerOperation(OperationAnalysisContext context)
+        private void AnalyzeFieldInitializerOperation(OperationAnalysisContext context)
         {
             var operation = (IFieldInitializerOperation) context.Operation.Parent;
             var fields = operation.InitializedFields;
-            if (!fields.Any(f => f.IsStatic) && fields.Any(f => f.Type.ToString().Equals(HttpClient)))
+            if (!fields.Any(f => f.IsStatic) && fields.Any(f => IsHttpClientItself(f.Type) || IsInheritedHttpClient(f.Type)))
             {
                 var diagnostic = Diagnostic.Create(EnforceSingletonHttpClientInstanceDiagnostic, operation.Syntax.GetLocation(), operation.Syntax.GetText());
                 context.ReportDiagnostic(diagnostic);
