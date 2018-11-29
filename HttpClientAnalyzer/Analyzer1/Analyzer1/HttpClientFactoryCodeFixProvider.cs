@@ -55,12 +55,29 @@ namespace Analyzer1
           
         }
 
+        private static ObjectCreationExpressionSyntax FindObjectCreationExpression(SyntaxNode node)
+        {
+            if (node is ObjectCreationExpressionSyntax)
+            {
+                return (ObjectCreationExpressionSyntax) node;
+            }
+            foreach (SyntaxNode childNode in node.ChildNodes())
+            {
+                ObjectCreationExpressionSyntax childResult = FindObjectCreationExpression(childNode);
+                if (childResult != null)
+                {
+                    return childResult;
+                }
+            }
+            return null;
+        }
+
         private async Task<Document> UseHttpClientFactory(Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
         {
             try
             {
                 var root = await document.GetSyntaxRootAsync();
-                var httpClientCreationExpression = root.FindNode(diagnostic.Location.SourceSpan);
+                var httpClientCreationExpression = FindObjectCreationExpression(root.FindNode(diagnostic.Location.SourceSpan));
 
 
                 var @class = httpClientCreationExpression.Ancestors().OfType<ClassDeclarationSyntax>().First();
@@ -76,12 +93,8 @@ namespace Analyzer1
 
                 var invocationNode =  ParseExpression("httpClientFactory.CreateClient()");
 
-                var newRoot2 =
-                    httpClientCreationExpression.ReplaceNode(httpClientCreationExpression.ChildNodes().First(),
-                        invocationNode);
-
                 var editor = await DocumentEditor.CreateAsync(document);
-                editor.ReplaceNode(httpClientCreationExpression, newRoot2);
+                editor.ReplaceNode(httpClientCreationExpression, invocationNode);
                 editor.InsertBefore(firstNode,
                      new[] { aField });
 

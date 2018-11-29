@@ -38,12 +38,12 @@ namespace Analyzer1
         public override void Initialize(AnalysisContext context)
         {
             //context.RegisterSyntaxTreeAction(AnalyzeSymbol);
-            context.RegisterOperationAction(this.AnalyzeObjectCreationOperation, OperationKind.ObjectCreation, OperationKind.Invocation);
+            context.RegisterOperationAction(this.AnalyzeOperation, OperationKind.ObjectCreation, OperationKind.Invocation);
       //      context.RegisterOperationAction(this.AnalyzeVariableDeclarationOperation, OperationKind.ObjectCreation);
         }
         
 
-        private void AnalyzeObjectCreationOperation(OperationAnalysisContext context)
+        private void AnalyzeOperation(OperationAnalysisContext context)
         {
          // var operation = (IObjectCreationOperation) context.Operation;
             if (context.Operation.Parent is IFieldInitializerOperation)
@@ -52,7 +52,7 @@ namespace Analyzer1
             }
             else if (context.Operation is IObjectCreationOperation)
             {
-                AnalyzeVariableDeclarationOperation(context);
+                CheckInstantiation(context.Operation.Type, context);
             }
             else if (context.Operation is IInvocationOperation)
             {
@@ -61,30 +61,14 @@ namespace Analyzer1
        
         }
 
-        private IVariableInitializerOperation FindVariableInitializer(IOperation operation)
-        {
-            IVariableInitializerOperation result = operation as IVariableInitializerOperation;
-            if (result != null)
-            {
-                return result;
-            }
-            return FindVariableInitializer(operation.Parent);
-        }
-
-        private void AnalyzeVariableDeclarationOperation(OperationAnalysisContext context)
-        {
-            var operation = FindVariableInitializer(context.Operation);
-            
-            CheckInstantiation(context.Operation.Type, operation, context);
-        }
-
         private static bool IsHttpClientItself(ITypeSymbol type)
         {
             return type.ToString().Equals(HttpClient);
         }
 
-        private void CheckInstantiation(ITypeSymbol type, IOperation operation, OperationAnalysisContext context)
+        private void CheckInstantiation(ITypeSymbol type, OperationAnalysisContext context)
         {
+            IOperation operation = context.Operation;
             if (IsHttpClientItself(type))
             {
                 var diagnostic = Diagnostic.Create(BlockHttpClientInstantiationDiagnostic, operation.Syntax.GetLocation(), operation.Syntax.GetText());
@@ -115,7 +99,7 @@ namespace Analyzer1
             {
                 return;
             }
-            CheckInstantiation(operation.TargetMethod.ReturnType, operation, context);
+            CheckInstantiation(operation.TargetMethod.ReturnType, context);
         }
         private void AnalyzeFieldInitializerOperation(OperationAnalysisContext context)
         {

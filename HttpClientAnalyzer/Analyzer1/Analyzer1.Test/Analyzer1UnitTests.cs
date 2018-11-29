@@ -22,6 +22,61 @@ namespace Analyzer1.Test
         }
 
         [TestMethod]
+        public void TestArgumentToInvocation()
+        {
+            var test = @"using System.Net.Http;
+
+namespace ConsoleApp1
+{
+    class Program
+    {
+        public static void DoSomethingWithHttpClient(HttpClient client)
+        {
+           
+        }
+
+        static void Main(string[] args)
+        {
+            DoSomethingWithHttpClient(new HttpClient());
+        }
+    }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = "BlockHttpClientInstantiation",
+                Message = "☹ To avoid socket exhaustion, DO NOT use new HttpClient()",
+                Severity = DiagnosticSeverity.Error,
+                Locations =
+                    new[] {
+                        new DiagnosticResultLocation("Test0.cs", 14, 39)
+                    }
+            };
+
+            VerifyCSharpDiagnostic(test, expected);
+
+            var fixedSource = @"using System.Net.Http;
+
+namespace ConsoleApp1
+{
+    class Program
+    {
+        private System.Net.Http.IHttpClientFactory httpClientFactory;
+
+        public static void DoSomethingWithHttpClient(HttpClient client)
+        {
+           
+        }
+
+        static void Main(string[] args)
+        {
+            DoSomethingWithHttpClient(httpClientFactory.CreateClient());
+        }
+    }
+}";
+            VerifyCSharpFix(test, fixedSource, allowNewCompilerDiagnostics: true);
+        }
+
+        [TestMethod]
         public void TestVariableDeclaration()
         {
             var test = @"using System.Net.Http;
@@ -41,11 +96,11 @@ namespace Analyzer1
             var expected = new DiagnosticResult
             {
                 Id = "BlockHttpClientInstantiation",
-                Message = "☹ To avoid socket exhaustion, DO NOT use = new HttpClient()",
+                Message = "☹ To avoid socket exhaustion, DO NOT use new HttpClient()",
                 Severity = DiagnosticSeverity.Error,
                 Locations =
                     new[] {
-                        new DiagnosticResultLocation("Test0.cs", 9, 38)
+                        new DiagnosticResultLocation("Test0.cs", 9, 40)
                     }
             };
 
@@ -123,11 +178,11 @@ class Program
             var expected = new DiagnosticResult
             {
                 Id = "BlockInheritedHttpClientInstantiation",
-                Message = "☹ To avoid socket exhaustion, DO NOT use = new Foo()",
+                Message = "☹ To avoid socket exhaustion, DO NOT use new Foo()",
                 Severity = DiagnosticSeverity.Error,
                 Locations =
                     new[] {
-                        new DiagnosticResultLocation("Test0.cs", 7, 27)
+                        new DiagnosticResultLocation("Test0.cs", 7, 29)
                     }
             };
 
@@ -155,11 +210,11 @@ class Program
             var expected = new DiagnosticResult
             {
                 Id = "BlockInheritedHttpClientInstantiation",
-                Message = "☹ To avoid socket exhaustion, DO NOT use = new Foo()",
+                Message = "☹ To avoid socket exhaustion, DO NOT use new Foo()",
                 Severity = DiagnosticSeverity.Error,
                 Locations =
                     new[] {
-                        new DiagnosticResultLocation("Test0.cs", 7, 34)
+                        new DiagnosticResultLocation("Test0.cs", 7, 36)
                     }
             };
 
